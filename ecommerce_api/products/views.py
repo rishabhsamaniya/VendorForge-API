@@ -1,12 +1,14 @@
 from django.shortcuts import render
 from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.permissions import AllowAny
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from .filters import ProductFilter
-
-from .models import Product, Category
-from .serializers import ProductSerializer, CategorySerializer
+from .models import Product, Category, ProductImage
+from .serializers import ProductSerializer, CategorySerializer, ProductImageSerializer
 from users.permissions import IsVendor
 
 # Create your views here.
@@ -47,5 +49,19 @@ class ProductUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return Product.objects.filter(vendor=self.request.user)
 
-    
+class UploadProductImageView(APIView):
+    permission_classes = [IsVendor]
 
+    def post(self, request, product_id):
+        product = Product.objects.get(id=product_id)
+        image = request.FILES.get('image')
+        product_image = ProductImage.objects.create(
+            product=product,
+            image=image
+        )
+
+        serializer = ProductImageSerializer(product_image)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    
